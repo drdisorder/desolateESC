@@ -81,8 +81,8 @@ CFLAGS = $(BASE_CFLAGS) \
 
 TRGT = arm-none-eabi-
 
-TARGET_HEX	 = $(BIN_DIR)/$(TARGET).hex
-TARGET_ELF	 = $(BIN_DIR)/$(TARGET).elf
+TARGET_HEX	 = $(BIN_DIR)/desolateESC_$(TARGET).hex
+TARGET_ELF	 = $(BIN_DIR)/desolateESC_$(TARGET).elf
 TARGET_OBJS	 = $(addsuffix .o,$(addprefix $(OBJECT_DIR)/,$(basename $(SRC))))
 
 
