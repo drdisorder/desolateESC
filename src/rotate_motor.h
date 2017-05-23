@@ -1,4 +1,4 @@
-
+/*This file is part of desolateESC CC BY-NC-SA*/
 #define Limit( amt , max) ((amt) < (0) ? (max+amt) : ((amt) >= (max) ? (amt-max) : (amt)))
 
 enum{

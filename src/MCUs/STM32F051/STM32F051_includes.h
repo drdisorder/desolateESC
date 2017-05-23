@@ -1,6 +1,8 @@
+/*This file is part of desolateESC CC BY-NC-SA*/
 #include "stm32f0xx.h"
 #include "system_stm32f0xx.h"
 #include "STM32f0xx_clock.h"
+#include "STM32f0xx_peripherals.h"
 #include "stm32f0xx_it.h"
 
 #include "stm32f0xx_ll_bus.h"

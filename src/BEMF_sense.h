@@ -1,4 +1,4 @@
-
+/*This file is part of desolateESC CC BY-NC-SA*/
 enum{
 	FALLING = 0,
 	RISING = 1
