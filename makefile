@@ -21,6 +21,9 @@ BIN_DIR		 = $(ROOT)/obj
 # Source files common to all targets
 SRC  = $(wildcard ./src/*.c)
 
+#target specific files
+SRC  += $(wildcard ./src/TARGETs/$(TARGET)/*.c)
+
 TARGET_MCU ?=STM32F051
 
 
@@ -70,7 +73,6 @@ ASFLAGS		 = $(ARCH_FLAGS) \
 LDFLAGS		 = -lm \
 		   $(ARCH_FLAGS) \
 		   -static \
-		   -nostartfiles \
 		   -Wl,-gc-sections \
 		   -T$(LD_SCRIPT)
 

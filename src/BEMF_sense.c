@@ -18,4 +18,6 @@ void setNextSensPhase(uint8_t phaseA, uint8_t phaseB, uint8_t phaseC){
 		if(phaseC == 2) nextSenseEdge = RISING;
 		else nextSenseEdge = FALLING;
 	}
+	setComparatorInput(nextSensePhase);
+	setComparatorEdge(nextSenseEdge);
 }
