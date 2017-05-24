@@ -1,4 +1,24 @@
 
+/* SIGNAL INPUT */
+/*_______________________________________________________________________________________________*/
+/*
+ input pin is PA2 on TIM2 CH3
+*/
+
+#define INPUT_TIM2
+#define INPUT_TIM_CHAN LL_TIM_CHANNEL_CH3
+#define INPUT_TIM_32BIT
+
+#define Input_GPIO_init \
+	LL_GPIO_InitTypeDef input_GPIO; \
+	input_GPIO.Pin              = LL_GPIO_PIN_2; \
+	input_GPIO.Mode          = LL_GPIO_MODE_ALTERNATE;  \
+	input_GPIO.Speed         = LL_GPIO_SPEED_HIGH; \
+	input_GPIO.Pull             = LL_GPIO_PULL_DOWN; \
+	input_GPIO.Alternate     = LL_GPIO_AF_2; \
+	LL_GPIO_Init(GPIOA, &input_GPIO); 
+
+
 
 /* PWM OUTPUT */
 /*_______________________________________________________________________________________________*/
