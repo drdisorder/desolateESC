@@ -1,4 +1,5 @@
 #include "main.h"
+#include "string.h"
 #include "STM32f0xx_peripherals.h"
 
 
@@ -37,7 +38,73 @@ void delay16(uint16_t delay){
 /* Signal input */
 /*_______________________________________________________________________________________________*/
 
+__IO uint32_t inputDMAbuffer[32];
+uint32_t InputBuf[32];
+uint32_t newInput;
 
+void SignalInputInit(){
+	LL_TIM_InitTypeDef  InputTimerinit;
+	InputTimerinit.Prescaler = 0;
+	#ifdef INPUT_TIM_32BIT
+		InputTimerinit.Autoreload = 0xFFFFFFFF;
+	#else
+		InputTimerinit.Autoreload = 0xFFFF;
+	#endif
+	InputTimerinit.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
+	InputTimerinit.RepetitionCounter = 0;
+	InputTimerinit.CounterMode = LL_TIM_COUNTERMODE_UP;
+	LL_TIM_Init(INPUT_TIM, &InputTimerinit);
+	LL_TIM_EnableCounter(INPUT_TIM);
+	
+	LL_TIM_IC_InitTypeDef InputConfig; 
+	InputConfig.ICPolarity    = LL_TIM_IC_POLARITY_BOTHEDGE;
+	InputConfig.ICActiveInput = LL_TIM_ACTIVEINPUT_DIRECTTI;
+	InputConfig.ICPrescaler   = LL_TIM_ICPSC_DIV1;
+	InputConfig.ICFilter      = 0x04;
+	LL_TIM_IC_Init(INPUT_TIM, INPUT_TIM_CHAN, &InputConfig);
+	
+	LL_DMA_DeInit(DMA1, INPUT_DMA_Channel);
+	LL_DMA_InitTypeDef DMA_InitStructure; 
+	DMA_InitStructure.PeriphOrM2MSrcAddress  = (uint32_t)&INPUT_DMA_SOURCE; 
+	DMA_InitStructure.MemoryOrM2MDstAddress  = (uint32_t)inputDMAbuffer; 
+	DMA_InitStructure.Direction              = LL_DMA_DIRECTION_PERIPH_TO_MEMORY;
+	DMA_InitStructure.Mode                   = LL_DMA_MODE_CIRCULAR;
+	DMA_InitStructure.PeriphOrM2MSrcIncMode  = LL_DMA_PERIPH_NOINCREMENT;
+	DMA_InitStructure.MemoryOrM2MDstIncMode  = LL_DMA_MEMORY_INCREMENT;
+	#ifdef INPUT_TIM_32BIT
+		DMA_InitStructure.PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_WORD;
+	#else
+		DMA_InitStructure.PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_HALFWORD;
+	#endif
+	DMA_InitStructure.MemoryOrM2MDstDataSize = LL_DMA_MDATAALIGN_WORD;
+	DMA_InitStructure.NbData                 = 32;
+	DMA_InitStructure.Priority               = LL_DMA_PRIORITY_VERYHIGH;
+	LL_DMA_Init(DMA1, INPUT_DMA_Channel, &DMA_InitStructure);
+	
+	
+	NVIC_SetPriority(INPUT_DMA_IRQn, 2);
+	NVIC_EnableIRQ(INPUT_DMA_IRQn);
+	
+	LL_DMA_EnableIT_TC(DMA1, INPUT_DMA_Channel);
+
+	INPUT_DMA_ENABLE_REQ;
+	LL_DMA_EnableChannel(DMA1, INPUT_DMA_Channel);
+}
+
+void INPUT_DMA_IRQHandler(void){
+	if((DMA1->ISR & INPUT_DMA_TC_ChannelFlag) != (uint32_t)RESET){
+		DMA1->IFCR = INPUT_DMA_TC_ChannelFlag;
+		if(((inputDMAbuffer[2]-inputDMAbuffer[0])*17) > inputDMAbuffer[31]-inputDMAbuffer[0]){
+			memcpy(InputBuf, (uint32_t *)inputDMAbuffer, 128);
+			newInput = 1;
+		}else{
+			LL_DMA_DisableChannel(DMA1, INPUT_DMA_Channel);
+			LL_DMA_SetDataLength(DMA1, INPUT_DMA_Channel, 32);
+			DMA1->IFCR = INPUT_DMA_TC_ChannelFlag;
+			LL_DMA_EnableChannel(DMA1, INPUT_DMA_Channel);
+		}
+	}
+}
 
 /* PWM out */
 /*_______________________________________________________________________________________________*/
@@ -45,7 +112,7 @@ void delay16(uint16_t delay){
 void PWMTimerInit(){
 	LL_TIM_InitTypeDef  PWMtimerinit;
 	PWMtimerinit.Prescaler = 0;
-	PWMtimerinit.Autoreload = 1000;
+	PWMtimerinit.Autoreload = 1024;
 	PWMtimerinit.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
 	PWMtimerinit.RepetitionCounter = 0;
 	PWMtimerinit.CounterMode = LL_TIM_COUNTERMODE_UP;
@@ -70,10 +137,10 @@ void PWMTimerInit(){
 	LL_TIM_EnableAllOutputs(TIM1);
 }
 
-void setPWMduty(uint32_t duty){
-	TIM1->CCR1 = duty;
-	TIM1->CCR2 = duty;
-	TIM1->CCR3 = duty;	
+void setPWMcompares(uint32_t compare){
+	TIM1->CCR1 = compare;
+	TIM1->CCR2 = compare;
+	TIM1->CCR3 = compare;	
 }
 
 /* BEMF Comparator */
@@ -82,7 +149,7 @@ void setPWMduty(uint32_t duty){
 void ComparatorInit(){
 	
 	LL_COMP_InitTypeDef  Comperatorinit;
-	Comperatorinit.PowerMode            = LL_COMP_POWERMODE_HIGHSPEED;
+	Comperatorinit.PowerMode            = LL_COMP_POWERMODE_MEDIUMSPEED;
 	Comperatorinit.InputPlus              = BEMF_STAR_CMP_IN;
 	Comperatorinit.InputMinus           = LL_COMP_INPUT_MINUS_VREFINT;
 	Comperatorinit.InputHysteresis      = LL_COMP_HYSTERESIS_NONE;

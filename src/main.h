@@ -12,6 +12,10 @@
 #include "drive_fets.h"
 #include "BEMF_sense.h"
 #include "rotate_motor.h"
+#include "compute_dshot.h"
 
-
+extern uint16_t inputFailsave;
+extern uint8_t RotationDirection;
+extern uint32_t InputBuf[32];
+extern uint32_t newInput;
 void ComparatorISR(uint16_t edgeTime);

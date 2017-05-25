@@ -5,9 +5,15 @@
  input pin is PA2 on TIM2 CH3
 */
 
-#define INPUT_TIM2
+#define INPUT_TIM TIM2
 #define INPUT_TIM_CHAN LL_TIM_CHANNEL_CH3
 #define INPUT_TIM_32BIT
+#define INPUT_DMA_SOURCE TIM2->CCR3
+#define INPUT_DMA_ENABLE_REQ LL_TIM_EnableDMAReq_CC3(INPUT_TIM);
+#define INPUT_DMA_Channel LL_DMA_CHANNEL_1
+#define INPUT_DMA_IRQn DMA1_Channel1_IRQn
+#define INPUT_DMA_IRQHandler DMA1_Channel1_IRQHandler
+#define INPUT_DMA_TC_ChannelFlag DMA_ISR_TCIF1
 
 #define Input_GPIO_init \
 	LL_GPIO_InitTypeDef input_GPIO; \

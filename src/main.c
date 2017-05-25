@@ -1,11 +1,14 @@
 /*This file is part of desolateESC CC BY-NC-SA*/
 #include "main.h"
 
-static uint8_t RotationDirection = 0;
+uint8_t RotationDirection = 0;
 static uint16_t BEMF_good_detects = 0;
 static uint16_t Last_BEMF_input = 0;
 uint8_t nextSenseEdge;
 uint8_t nextSensePhase;
+uint16_t inputFailsave = 0;
+uint32_t InputBuf[32];
+uint32_t newInput = 0;
 
 int main(){
 	SystemClock_Config();
@@ -15,20 +18,37 @@ int main(){
 	ALL_PHASES_LOW;
 	TimeTimerInit();
 	PWMTimerInit();
+	setPWMcompares(0);
 	
 	Comparator_GPIO_init;
 	ComparatorInit();
 	
-	setPWMduty(175);
+	Input_GPIO_init;
+	SignalInputInit();
+	
 	while(1){
+		static uint8_t InputWasLow = 0;
 		uint16_t loopstart = micros16();
-		if(Last_BEMF_input > 200){
-			setComparatorInterruptStatus(1);
-			BEMF_good_detects = 0;
-			Last_BEMF_input = 0;
-			SwitchPhaseStep(RotationDirection);
-		}else Last_BEMF_input++;
 		
+		if(inputFailsave < 500) inputFailsave++;
+		
+		uint16_t inputValue = computeDshot();
+		if(inputFailsave == 500) inputValue = 0;
+		
+		if(inputValue > 47){
+			if(BEMF_good_detects < 100 && inputValue > 256) inputValue=256;
+			if(InputWasLow == 1)setPWMcompares(inputValue>>1);
+			if(Last_BEMF_input > 200){
+				setComparatorInterruptStatus(1);
+				BEMF_good_detects = 0;
+				Last_BEMF_input = 0;
+				SwitchPhaseStep(RotationDirection);
+			}else if(Last_BEMF_input < 250)Last_BEMF_input++;
+		}else{
+			InputWasLow = 1;
+			setComparatorInterruptStatus(0);
+			ALL_PHASES_LOW;
+		}
 		
 		
 		while((uint16_t)((uint16_t)micros16()-(uint16_t)loopstart) < 125); // 8k loop

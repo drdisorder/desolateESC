@@ -1,7 +1,7 @@
 #makefile for desolateESC
 
 
-TARGET ?=WARTH32_35A
+TARGET ?=WRAITH32_35A
 
 include ./src/TARGETs/$(TARGET)/mksetup.mk
 
@@ -40,8 +40,6 @@ ifeq ($(TARGET_MCU),STM32F051)
 	
 	SRC += $(wildcard ./src/MCUs/STM32F051/*.c)
 	SRC += $(wildcard $(STMLLSRCDDIR)*.c)
-
-	
 endif
 
 
@@ -115,6 +113,3 @@ $(OBJECT_DIR)/%.o): %.S
 
 clean:
 	rm -f $(TARGET_HEX) $(TARGET_ELF) $(TARGET_OBJS)
-
-help:
-	@echo ""
