@@ -6,7 +6,7 @@ static uint16_t BEMF_good_detects = 0;
 static uint16_t Last_BEMF_input = 0;
 uint8_t nextSenseEdge;
 uint8_t nextSensePhase;
-uint16_t inputFailsave = 0;
+uint16_t inputFailsave = 250;
 uint32_t InputBuf[32];
 uint32_t newInput = 0;
 
@@ -33,7 +33,11 @@ int main(){
 		if(inputFailsave < 500) inputFailsave++;
 		
 		uint16_t inputValue = computeDshot();
-		if(inputFailsave == 500) inputValue = 0;
+		if(inputFailsave == 500){
+			inputValue = 0;
+			InputWasLow = 0;
+			setPWMcompares(0);
+		}
 		
 		if(inputValue > 47){
 			if(BEMF_good_detects < 100 && inputValue > 256) inputValue=256;
@@ -45,7 +49,7 @@ int main(){
 				SwitchPhaseStep(RotationDirection);
 			}else if(Last_BEMF_input < 250)Last_BEMF_input++;
 		}else{
-			InputWasLow = 1;
+			if(inputFailsave <= 1) InputWasLow = 1;
 			setComparatorInterruptStatus(0);
 			ALL_PHASES_LOW;
 		}
