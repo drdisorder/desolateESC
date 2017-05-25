@@ -36,7 +36,7 @@ ifeq ($(TARGET_MCU),STM32F051)
 	STMLLSRCDDIR = $(STMLLDIR)/src/
 	STMLLINCDDIR = $(STMLLDIR)/inc
 	SRC +=  ./startup/startup_stm32f051x8.s
-	LD_SCRIPT	 ?= ./linker/STM32F05xxx_FLASH.ld
+	LD_SCRIPT	 ?= ./linker/STM32F051xxx_FLASH.ld
 	
 	SRC += $(wildcard ./src/MCUs/STM32F051/*.c)
 	SRC += $(wildcard $(STMLLSRCDDIR)*.c)
