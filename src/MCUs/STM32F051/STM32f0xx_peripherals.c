@@ -131,6 +131,7 @@ void PWMTimerInit(){
 	LL_TIM_OC_Init(TIM1, LL_TIM_CHANNEL_CH1, &PWMchannelinit);
 	LL_TIM_OC_Init(TIM1, LL_TIM_CHANNEL_CH2, &PWMchannelinit);
 	LL_TIM_OC_Init(TIM1, LL_TIM_CHANNEL_CH3, &PWMchannelinit);
+	LL_TIM_OC_Init(TIM1, LL_TIM_CHANNEL_CH4, &PWMchannelinit);
 		
 	LL_TIM_OC_SetDeadTime(TIM1, PWM_DEADTIME);
 	LL_TIM_EnableCounter(TIM1);
@@ -141,6 +142,7 @@ void setPWMcompares(uint32_t compare){
 	TIM1->CCR1 = compare;
 	TIM1->CCR2 = compare;
 	TIM1->CCR3 = compare;	
+	TIM1->CCR4 = compare;	
 }
 
 /* BEMF Comparator */
