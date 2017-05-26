@@ -9,10 +9,13 @@ uint8_t nextSensePhase;
 uint16_t inputFailsave = 250;
 uint32_t InputBuf[32];
 uint32_t newInput = 0;
+uint32_t deg60Time = 0;
 
 int main(){
 	SystemClock_Config();
 	EnablePheriphClocks();
+	
+	getConfiguration();
 	
 	FETControl_GPIO_init;
 	ALL_PHASES_LOW;
@@ -41,10 +44,11 @@ int main(){
 		
 		if(inputValue > 47){
 			if(BEMF_good_detects < 100 && inputValue > 256) inputValue=256;
-			if(InputWasLow == 1)setPWMcompares(inputValue>>1);
+			if(InputWasLow == 1)setPWMcompares((inputValue>>1)+2);
 			if(Last_BEMF_input > 200){
 				setComparatorInterruptStatus(1);
 				BEMF_good_detects = 0;
+				deg60Time = 0;
 				Last_BEMF_input = 0;
 				SwitchPhaseStep(RotationDirection);
 			}else if(Last_BEMF_input < 250)Last_BEMF_input++;
@@ -61,18 +65,17 @@ int main(){
 
 
 void ComparatorISR(uint16_t edgeTime){
-	static uint16_t timingTime = 0;
-	static uint16_t blankingTime = 0;
-	static uint32_t deg60Time = 0;
+	static uint32_t timingTime = 0;
+	static uint32_t blankingTime = 0;
 	static uint16_t lastInterruptTime = 0;
 	uint32_t deg60intervalTime = (uint16_t)((uint16_t)edgeTime-(uint16_t)lastInterruptTime);
 	
 	if(getComparatorOut() != nextSenseEdge) return;
-	if(BEMF_good_detects < 100) delay16(10);
-	else delay16(3);
-		
-	if(getComparatorOut() != nextSenseEdge) return;
-	
+	if(deg60Time > 320){
+		if(BEMF_good_detects < 100) delay16(10);
+		else delay16(3);
+		if(getComparatorOut() != nextSenseEdge) return;
+	}
 	
 	Last_BEMF_input = 0;
 	setComparatorInterruptStatus(0);
@@ -86,8 +89,8 @@ void ComparatorISR(uint16_t edgeTime){
 		while((uint16_t)((uint16_t)getTimeSource() - (uint16_t)lastInterruptTime) < blankingTime);
 	}
 	deg60Time = ((deg60Time<<4)-deg60Time+deg60intervalTime)>>4;
-	timingTime = deg60Time>>2; //15deg
-	blankingTime = timingTime+(deg60Time>>3); //7.5deg
+	timingTime = (uint32_t)(deg60Time*TimingFactor)>>10;
+	blankingTime = timingTime+((uint32_t)(deg60Time*BlankingFactor)>>10); 
 	
 	setComparatorInterruptStatus(1);
 	if(BEMF_good_detects < 1000)BEMF_good_detects++;
