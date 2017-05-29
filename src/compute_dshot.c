@@ -26,9 +26,9 @@ uint16_t computeDshot(){
 				|(dshotBits[13]^dshotBits[9]^dshotBits[5])<<1
 				|(dshotBits[12]^dshotBits[8]^dshotBits[4])
 			);
-		uint8_t regCRC = (dshotBits[3]<<3 | dshotBits[2]<<2 | dshotBits[1]<<1 | dshotBits[0]);
+		uint8_t recCRC = (dshotBits[3]<<3 | dshotBits[2]<<2 | dshotBits[1]<<1 | dshotBits[0]);
 		
-		if(checkCRC == regCRC){
+		if(checkCRC == recCRC){
 			lastInput = (
 				dshotBits[15]<<10 | dshotBits[14]<<9 | dshotBits[13]<<8 | dshotBits[12]<<7
 				| dshotBits[11]<<6 | dshotBits[10]<<5 | dshotBits[9]<<4 | dshotBits[8]<<3

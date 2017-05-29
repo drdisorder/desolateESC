@@ -14,6 +14,7 @@
 #include "BEMF_sense.h"
 #include "rotate_motor.h"
 #include "compute_dshot.h"
+#include "sounds.h"
 
 extern uint16_t inputFailsave;
 extern uint8_t RotationDirection;

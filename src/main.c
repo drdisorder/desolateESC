@@ -29,14 +29,19 @@ int main(){
 	Input_GPIO_init;
 	SignalInputInit();
 	
+	noise(0,1,0);
+	noise(0,0,0);
+	noise(0,0,1);
+	delay16(0xFFFF);
+	
 	while(1){
 		static uint8_t InputWasLow = 0;
 		uint16_t loopstart = micros16();
 		
-		if(inputFailsave < 500) inputFailsave++;
+		if(inputFailsave < 1000) inputFailsave++;
 		
 		uint16_t inputValue = computeDshot();
-		if(inputFailsave == 500){
+		if(inputFailsave == 1000){
 			inputValue = 0;
 			InputWasLow = 0;
 			setPWMcompares(0);
@@ -53,7 +58,14 @@ int main(){
 				SwitchPhaseStep(RotationDirection);
 			}else if(Last_BEMF_input < 250)Last_BEMF_input++;
 		}else{
-			if(inputFailsave <= 1) InputWasLow = 1;
+			if(inputFailsave <= 1){
+				if(InputWasLow == 0){
+					noise(8,1,1);
+					delay16(0x8FFF);
+					noise(8,1,1);
+					InputWasLow = 1;
+				}
+			}
 			setComparatorInterruptStatus(0);
 			ALL_PHASES_LOW;
 		}
