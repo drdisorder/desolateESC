@@ -77,7 +77,7 @@ LDFLAGS		 = -lm \
 
 
 CFLAGS = $(BASE_CFLAGS) \
-	-Os
+	-O3
 
 TRGT = arm-none-eabi-
 

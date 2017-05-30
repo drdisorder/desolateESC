@@ -222,10 +222,150 @@ void TIM3_IRQHandler(void){
 }
 
 
+/* UARTs */
+/*_______________________________________________________________________________________________*/
 
 
 
+#ifdef UART_TLM
+void TLMUARTInit(){
+	LL_USART_DeInit(UART_TLM);
+	
+	LL_USART_EnableHalfDuplex(UART_TLM);
+	
+	LL_USART_InitTypeDef UART_Init;
+	UART_Init.BaudRate                 = 115200U;
+	UART_Init.DataWidth                = LL_USART_DATAWIDTH_8B;
+	UART_Init.StopBits                   = LL_USART_STOPBITS_1;
+	UART_Init.Parity                       = LL_USART_PARITY_NONE ;
+	UART_Init.TransferDirection       = LL_USART_DIRECTION_TX_RX;
+	UART_Init.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
+	UART_Init.OverSampling           = LL_USART_OVERSAMPLING_16;
+	LL_USART_Init(UART_TLM, &UART_Init);
+	
+	LL_USART_Enable(UART_TLM);
+	
+	NVIC_SetPriority(UART_TLM_IRQn, 10);
+	NVIC_EnableIRQ(UART_TLM_IRQn);
+	
+	LL_USART_EnableIT_TXE(UART_TLM);
+}
 
+static uint8_t tlmuartbuflen = 0;
+static uint8_t tlmuartleftbytes = 0;
+static uint8_t tlmuartTXbuf[64];
+
+void UART_TLM_IRQHandler(void){
+	if(LL_USART_IsActiveFlag_TXE(UART_TLM)){
+		if(tlmuartleftbytes > 0){
+			LL_USART_TransmitData8(UART_TLM, tlmuartTXbuf[tlmuartbuflen-tlmuartleftbytes]);
+			tlmuartleftbytes--;
+		}else{
+			LL_USART_DisableIT_TXE(UART_TLM);
+		}
+	}
+}
+
+void TLMUARTsend(uint8_t *buf, uint8_t length){
+	tlmuartbuflen = length;
+	tlmuartleftbytes = length;
+	for(uint8_t i=0; i<length;i++) tlmuartTXbuf[i] = buf[i];
+	LL_USART_EnableIT_TXE(UART_TLM);
+}
+
+#endif
+
+
+/* ADCs */
+/*_______________________________________________________________________________________________*/
+
+__IO uint16_t ADC_DMAbuffer[ADC_CHANNEL_COUNT*10];
+
+void ADCInit(){
+	
+	LL_SYSCFG_SetRemapDMA_ADC(LL_SYSCFG_ADC1_RMP_DMA1_CH2);
+	LL_DMA_DeInit(DMA1, LL_DMA_CHANNEL_2);
+	LL_DMA_InitTypeDef DMA_InitStructure; 
+	DMA_InitStructure.PeriphOrM2MSrcAddress  = (uint32_t)&ADC1->DR;
+	DMA_InitStructure.MemoryOrM2MDstAddress  = (uint32_t)ADC_DMAbuffer;
+	DMA_InitStructure.Direction              = LL_DMA_DIRECTION_PERIPH_TO_MEMORY;
+	DMA_InitStructure.Mode                   = LL_DMA_MODE_CIRCULAR;
+	DMA_InitStructure.PeriphOrM2MSrcIncMode  = LL_DMA_PERIPH_NOINCREMENT;
+	DMA_InitStructure.MemoryOrM2MDstIncMode  = LL_DMA_MEMORY_INCREMENT;
+	DMA_InitStructure.PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_HALFWORD;
+	DMA_InitStructure.MemoryOrM2MDstDataSize = LL_DMA_MDATAALIGN_HALFWORD;
+	DMA_InitStructure.NbData                 = ADC_CHANNEL_COUNT*10;
+	DMA_InitStructure.Priority               = LL_DMA_PRIORITY_HIGH;
+	LL_DMA_Init(DMA1, LL_DMA_CHANNEL_2, &DMA_InitStructure);
+	
+	LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_2);
+	
+	LL_ADC_CommonDeInit(ADC1_COMMON);
+	LL_ADC_DeInit(ADC1);
+	
+	LL_ADC_InitTypeDef ADC_Init;
+	ADC_Init.Clock                = LL_ADC_CLOCK_SYNC_PCLK_DIV2;
+	ADC_Init.Resolution         = LL_ADC_RESOLUTION_12B;
+	ADC_Init.DataAlignment  = LL_ADC_DATA_ALIGN_RIGHT;
+	ADC_Init.LowPowerMode  = LL_ADC_LP_MODE_NONE;
+	LL_ADC_StructInit(&ADC_Init);
+	
+	LL_ADC_SetCommonPathInternalCh(ADC1_COMMON, LL_ADC_PATH_INTERNAL_TEMPSENSOR);
+	
+	
+	LL_ADC_REG_InitTypeDef ADC_REG_Init;
+	ADC_REG_Init.TriggerSource       = LL_ADC_REG_TRIG_SOFTWARE;
+	ADC_REG_Init.SequencerDiscont = LL_ADC_REG_SEQ_DISCONT_DISABLE;
+	ADC_REG_Init.ContinuousMode   = LL_ADC_REG_CONV_CONTINUOUS;
+	ADC_REG_Init.DMATransfer     	 = LL_ADC_REG_DMA_TRANSFER_UNLIMITED;
+	ADC_REG_Init.Overrun               = LL_ADC_REG_OVR_DATA_OVERWRITTEN;
+	LL_ADC_REG_Init(ADC1, &ADC_REG_Init);
+	
+	LL_ADC_REG_SetSequencerScanDirection(ADC1, LL_ADC_REG_SEQ_SCAN_DIR_FORWARD);
+	
+	LL_ADC_SetSamplingTimeCommonChannels(ADC1, LL_ADC_SAMPLINGTIME_13CYCLES_5);
+	
+	LL_ADC_REG_SetSequencerChAdd(ADC1, LL_ADC_CHANNEL_TEMPSENSOR);
+	#ifdef VOLTAGE_CHANNEL
+		LL_ADC_REG_SetSequencerChAdd(ADC1, VOLTAGE_CHANNEL);
+	#endif
+	#ifdef CURRENT_CHANNEL
+		LL_ADC_REG_SetSequencerChAdd(ADC1, CURRENT_CHANNEL);
+	#endif
+	
+	LL_ADC_StartCalibration(ADC1);
+	while(LL_ADC_IsCalibrationOnGoing(ADC1));
+	delay16(5000);
+	LL_ADC_ClearFlag_ADRDY(ADC1);
+	delay16(5000);
+	LL_ADC_Enable(ADC1);
+	delay16(5000);
+	while (!LL_ADC_IsEnabled(ADC1));
+	delay16(5000);
+	LL_ADC_REG_StartConversion(ADC1);
+}	
+
+void getADCvalues(int16_t *ADCdatas){
+	static int16_t calibCurrent = 0;
+	uint8_t ArrMax = ADC_CHANNEL_COUNT*10;
+	uint8_t ChannelOrder[ADC_CHANNEL_COUNT] = ADC_CHANNEL_ORDER;
+	ADCdatas[0] = __LL_ADC_CALC_TEMPERATURE(3300,ADC_DMAbuffer[ChannelOrder[0]],LL_ADC_RESOLUTION_12B); 
+	#ifdef VOLTAGE_CHANNEL
+		ADCdatas[1] = ADC_DMAbuffer[ChannelOrder[1]];
+	#else
+		ADCdatas[1] = 0;
+	#endif
+	#ifdef CURRENT_CHANNEL
+		//get Current avg
+		uint32_t CurrentAVG = 0;
+		for(uint8_t i=ChannelOrder[2];i<ArrMax; i+=ADC_CHANNEL_COUNT){
+			CurrentAVG += ADC_DMAbuffer[i];
+		}
+		ADCdatas[2] = (CurrentAVG/ArrMax);
+	#else
+		ADCdatas[2] = 0;
+	#endif
+}	
 
 
 

@@ -15,6 +15,7 @@
 #include "rotate_motor.h"
 #include "compute_dshot.h"
 #include "sounds.h"
+#include "telemetry.h"
 
 extern uint16_t inputFailsave;
 extern uint8_t RotationDirection;

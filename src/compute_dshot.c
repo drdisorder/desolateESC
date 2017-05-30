@@ -3,6 +3,7 @@
 
 uint32_t InputBuf[32];
 uint32_t newInput;
+uint8_t telemetryRequest = 0;
 
 uint16_t computeDshot(){
 	static uint16_t lastInput = 0;
@@ -35,6 +36,7 @@ uint16_t computeDshot(){
 				| dshotBits[7]<<2 | dshotBits[6]<<1 | dshotBits[5]
 			
 			);
+			if(dshotBits[4] == 1) telemetryRequest = 1;
 			inputFailsave = 0;
 		}
 	}
