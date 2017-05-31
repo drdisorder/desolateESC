@@ -3,6 +3,9 @@
 
 TARGET ?=WRAITH32_35A
 
+
+INCLUDE_DIRS =
+SRC = 
 include ./src/TARGETs/$(TARGET)/mksetup.mk
 
 
@@ -19,7 +22,7 @@ BIN_DIR		 = $(ROOT)/obj
 
 
 # Source files common to all targets
-SRC  = $(wildcard ./src/*.c)
+SRC  += $(wildcard ./src/*.c)
 
 #target specific files
 SRC  += $(wildcard ./src/TARGETs/$(TARGET)/*.c)
@@ -46,7 +49,7 @@ endif
 CC		 = arm-none-eabi-gcc
 OBJCOPY		 = arm-none-eabi-objcopy
 
-INCLUDE_DIRS = $(DEVDIR)/Include \
+INCLUDE_DIRS += $(DEVDIR)/Include \
           $(CORELIBDIR) \
           $(STMLLINCDDIR) \
 	  ./src/TARGETs/$(TARGET) \

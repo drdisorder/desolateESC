@@ -1,3 +1,13 @@
+/* TARGET CONFIGURATION */
+/*_______________________________________________________________________________________________*/
+
+// temperature in C where it reduces the max throttle
+#define OVERTEMP_PROTECTION 100
+// factor how strong the max throttle is reduced
+#define OVERTEMP_FACTOR 5
+// max reduction
+#define OVERTEMP_MIN 512
+
 
 /* SIGNAL INPUT */
 /*_______________________________________________________________________________________________*/
@@ -133,6 +143,57 @@ C: A4
 	
 	
 	
+/* Dshot Telemetry */
+/*_______________________________________________________________________________________________*/
+	
+		
+/*
+UART1 TX B6
+*/
+
+#define UART_GPIO_init \
+	LL_GPIO_InitTypeDef  UART_GPIOS; \
+	UART_GPIOS.Pin              = LL_GPIO_PIN_6; \
+	UART_GPIOS.Mode          = LL_GPIO_MODE_ALTERNATE; \
+	UART_GPIOS.Speed         = LL_GPIO_SPEED_HIGH; \
+	UART_GPIOS.Pull            = LL_GPIO_PULL_UP; \
+	UART_GPIOS.Alternate     = LL_GPIO_AF_0; \
+	LL_GPIO_Init(GPIOB, &UART_GPIOS); 
+	
+#define UART_TLM USART1	
+#define UART_TLM_IRQn USART1_IRQn
+#define UART_TLM_IRQHandler USART1_IRQHandler	
+	
+	
+	
+/* ADCs */
+/*_______________________________________________________________________________________________*/
+	
+		
+/*
+voltage devider on: A3
+current on: A6
+*/
+
+#define ADC_GPIO_init 
+	/*LL_GPIO_InitTypeDef ADC_GPIOS; \
+	ADC_GPIOS.Pin              = LL_GPIO_PIN_3 | LL_GPIO_PIN_6; \
+	ADC_GPIOS.Mode          = LL_GPIO_MODE_ANALOG; \
+	ADC_GPIOS.Speed         = LL_GPIO_SPEED_HIGH; \
+	ADC_GPIOS.Pull            = LL_GPIO_PULL_NO; \
+	ADC_GPIOS.Alternate     = LL_GPIO_AF_0; \
+	LL_GPIO_Init(GPIOA, &ADC_GPIOS); */
+	
+	
+//#define VOLTAGE_CHANNEL LL_ADC_CHANNEL_3
+//#define VOLTAGE_SCALE_DEVIDER 170
+
+//#define CURRENT_CHANNEL LL_ADC_CHANNEL_6
+//#define CURRENT_SCALE_DEVIDER 260
+
+#define ADC_CHANNEL_COUNT 1
+
+#define ADC_CHANNEL_ORDER {0}
 	
 	
 	

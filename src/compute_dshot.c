@@ -36,7 +36,6 @@ uint16_t computeDshot(){
 				| dshotBits[7]<<2 | dshotBits[6]<<1 | dshotBits[5]
 			
 			);
-			if(dshotBits[4] == 1) telemetryRequest = 1;
 			inputFailsave = 0;
 		}
 	}

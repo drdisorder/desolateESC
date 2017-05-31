@@ -20,13 +20,14 @@ Currently supported MCU's:
 Currently supported targets:
 - Wraith32 35A
 - Maverick ESC
-- KISS24A ESC
+- KISS24A ESC (now also when flashed over the bootloader)
 
 Currently working state:
 - Dshot with any bitrate (auto bitrate) tested with 600 and 1200
+- Dshot telemetry workes on the desk
+- ADC stuff like temperature, voltage and if on the HW the current. whilst the current reading is not very accurate
 - desk tests with different motors run fine up to a phase switch speed of 50khz (500rpm on a 2pole motor)
 
 Todo:
-- whole ADC stuff (voltage, temperature and perhaps current)
-- perhaps telemetry (as there is a request bit in dshot)
+- perhaps blheli and maverick bootloader support, if not encrypted.
 - it has to be tested a lot

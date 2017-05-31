@@ -8,3 +8,4 @@ make_target() {
 make_target WRAITH32_35A
 make_target MAVERICK
 make_target KISS24A
+make_target KISS24A_KISSBL

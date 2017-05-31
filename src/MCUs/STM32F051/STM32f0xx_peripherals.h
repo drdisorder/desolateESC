@@ -16,3 +16,5 @@ void TLMUARTInit(void);
 void TLMUARTsend(uint8_t *buf, uint8_t length);
 void ADCInit(void);
 void getADCvalues(int16_t *ADCdatas);
+void WDTinit(void);
+void resetWDT(void);

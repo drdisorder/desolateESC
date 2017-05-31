@@ -1,4 +1,22 @@
 
+/* TARGET CONFIGURATION */
+/*_______________________________________________________________________________________________*/
+
+#define TARGET_LOOP KISS_loop()
+void KISS_loop(void);
+
+// temperature in C where it reduces the max throttle
+#define OVERTEMP_PROTECTION 100
+// factor how strong the max throttle is reduced
+#define OVERTEMP_FACTOR 5
+// max reduction
+#define OVERTEMP_MIN 512
+
+
+
+
+
+
 /* SIGNAL INPUT */
 /*_______________________________________________________________________________________________*/
 /*
@@ -129,7 +147,58 @@ C: A5
 #define BEMF_C_CMP_IN LL_COMP_INPUT_MINUS_DAC1_CH2	
 
 	
+/* Dshot Telemetry */
+/*_______________________________________________________________________________________________*/
 	
+		
+/*
+UART1 TX B6
+*/
+
+#define UART_GPIO_init \
+	LL_GPIO_InitTypeDef  UART_GPIOS; \
+	UART_GPIOS.Pin              = LL_GPIO_PIN_14; \
+	UART_GPIOS.Mode          = LL_GPIO_MODE_ALTERNATE; \
+	UART_GPIOS.Speed         = LL_GPIO_SPEED_HIGH; \
+	UART_GPIOS.Pull            = LL_GPIO_PULL_UP; \
+	UART_GPIOS.Alternate     = LL_GPIO_AF_1; \
+	LL_GPIO_Init(GPIOA, &UART_GPIOS); 
+	
+#define UART_TLM USART2	
+#define UART_TLM_IRQn USART2_IRQn
+#define UART_TLM_IRQHandler USART2_IRQHandler	
+	
+	
+	
+/* ADCs */
+/*_______________________________________________________________________________________________*/
+	
+		
+/*
+voltage devider on: A7
+current on: A0
+*/
+
+#define ADC_GPIO_init \
+	LL_GPIO_InitTypeDef ADC_GPIOS; \
+	ADC_GPIOS.Pin              = LL_GPIO_PIN_1 | LL_GPIO_PIN_7; \
+	ADC_GPIOS.Mode          = LL_GPIO_MODE_ANALOG; \
+	ADC_GPIOS.Speed         = LL_GPIO_SPEED_HIGH; \
+	ADC_GPIOS.Pull            = LL_GPIO_PULL_NO; \
+	ADC_GPIOS.Alternate     = LL_GPIO_AF_0; \
+	LL_GPIO_Init(GPIOA, &ADC_GPIOS); 
+	
+#define MCU_VOLTAGE 3600
+	
+#define VOLTAGE_CHANNEL LL_ADC_CHANNEL_7
+#define VOLTAGE_SCALE_DEVIDER 71
+
+#define CURRENT_CHANNEL LL_ADC_CHANNEL_1
+#define CURRENT_SCALE_DEVIDER 15
+
+#define ADC_CHANNEL_COUNT 3
+
+#define ADC_CHANNEL_ORDER {0,2,1}	
 	
 	
 	

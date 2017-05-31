@@ -38,6 +38,8 @@ int main(){
 	
 	ADCInit();
 	
+	WDTinit();
+	
 	//init GPIO's
 	//________________________________________________________
 	#ifdef UART_TLM
@@ -57,11 +59,12 @@ int main(){
 	delay16(0xFFFF);
 	
 	while(1){
+		static int16_t TelemetryData[5] = {0,0,0,0,0};
 		static uint8_t InputWasLow = 0;
 		static uint8_t running = 0;
-		static int16_t TelemetryData[5] = {0,0,0,0,0};
+		static uint8_t errorCode = 0;
 		uint16_t loopstart = micros16();
-		
+		resetWDT();
 		
 		//read input
 		//________________________________________________________
@@ -72,12 +75,33 @@ int main(){
 			inputValue = 0;
 			InputWasLow = 0;
 			setPWMcompares(0);
+			if(running == 1 && errorCode == 0) errorCode = 1;
 		}
 		
+		// input safety
+		static uint32_t lastSignal = 0;
+		if(lastSignal < 47 && inputValue == 2047) inputValue = 0; // one weakness of dshot
+		lastSignal = inputValue;
+		
+		// temperature protection
+		#ifdef OVERTEMP_PROTECTION
+		if(TelemetryData[0] > OVERTEMP_PROTECTION){
+			int32_t tempReducedValue = 204700/(100+((TelemetryData[0]-OVERTEMP_PROTECTION)*OVERTEMP_FACTOR));
+			if(tempReducedValue < OVERTEMP_MIN) tempReducedValue = OVERTEMP_MIN;
+			if(inputValue > tempReducedValue) inputValue = tempReducedValue;
+			if(errorCode == 0) errorCode = 2;
+		}
+		#endif
+		
 		//startup and throttle handling
-		//_______________________________________________________
+		//________________________________________________________
+		static uint16_t fastRamp = 0;
 		if(inputValue > 47){
 			if(BEMF_good_detects < 100 && inputValue > 256) inputValue=256;
+			
+			if(inputValue > fastRamp+20 && fastRamp+20 < 2047 && fastRamp < 512) inputValue = fastRamp+20;
+			fastRamp = inputValue; 
+			
 			if(InputWasLow == 1){
 				setPWMcompares((inputValue>>1)+2);
 				running = 1;
@@ -90,6 +114,7 @@ int main(){
 				SwitchPhaseStep(RotationDirection);
 			}else if(Last_BEMF_input < 250)Last_BEMF_input++;
 		}else{
+			fastRamp = 0;
 			running = 0;
 			if(inputFailsave <= 1){
 				if(InputWasLow == 0){
@@ -113,20 +138,29 @@ int main(){
 		//compute telemetry
 		//_______________________________________________________
 		#ifdef VOLTAGE_CHANNEL
-			TelemetryData[1] = TelemetryData[1]*10/VOLTAGE_SCALE_DEVIDER;
+		TelemetryData[1] = TelemetryData[1]*100/VOLTAGE_SCALE_DEVIDER;
 		#endif
 		
 		#ifdef CURRENT_CHANNEL
-			static int16_t CalibCurrent = 0;
-			static int16_t FilterCurrent = 0;
-			if(running == 0){
-				CalibCurrent = (CalibCurrent+(TelemetryData[2]<<1))/2;
-			}
-			TelemetryData[2] = ((TelemetryData[2]<<1)-CalibCurrent)*100/CURRENT_SCALE_DEVIDER;
-			FilterCurrent = ((FilterCurrent<<3)-FilterCurrent+TelemetryData[2])>>3;
-			TelemetryData[2] = FilterCurrent;
-		
+		static int16_t CalibCurrent = 0;
+		static int16_t FilterCurrent = 0;
+		if(running == 0){
+			CalibCurrent = (CalibCurrent+(TelemetryData[2]<<1))/2;
+		}
+		TelemetryData[2] = ((TelemetryData[2]<<1)-CalibCurrent)*1000/CURRENT_SCALE_DEVIDER;
+		FilterCurrent = ((FilterCurrent<<3)-FilterCurrent+TelemetryData[2])>>3;
+		TelemetryData[2] = FilterCurrent;
+	
+		//calc consumption
+		//_______________________________________________________
+		static uint16_t consumptionLastTime = 0;
+		static uint32_t consuption32 = 0;
+		uint16_t consumptionCalcTime = micros16();
+		consuption32 += TelemetryData[2]*((uint16_t)((uint16_t)consumptionCalcTime-(uint16_t)consumptionLastTime))/36000;
+		consumptionLastTime = consumptionCalcTime;
+		TelemetryData[3] = consuption32/10000;
 		#endif
+		
 		
 		#ifdef UART_TLM
 		if(telemetryRequest == 1){
@@ -144,6 +178,28 @@ int main(){
 		
 		//looptime debug
 		//TelemetryData[3] = (TelemetryData[3]*15+((uint16_t)((uint16_t)micros16()-(uint16_t)loopstart)))>>4;
+		
+		
+		//target specific
+		//_______________________________________________________
+		#ifdef TARGET_LOOP
+		TARGET_LOOP;
+		#endif
+		
+		
+		
+		//rustle error code
+		//_______________________________________________________		
+		if(errorCode != 0 && running == 0){
+			static uint16_t loopCounter = 0;
+			if(++loopCounter == 7500){
+				loopCounter = 0;
+				for(uint8_t i = 0;i < errorCode; i++){
+					noise(128,1,1);
+				}
+			}
+		}
+		
 		
 		//complete loop
 		//_______________________________________________________

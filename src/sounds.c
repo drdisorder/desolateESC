@@ -16,6 +16,7 @@ void noise(uint8_t tonetype, uint8_t fadeIn, uint8_t fadeOut){
 			if(fadeOut)setPWMcompares(((3-(w-3))*7)+15);
 		}
 		for(uint16_t i = 0;i<300;i++){
+			resetWDT();
 			PHASE_A_LOW;
 			uint16_t desolateSound = micros16()&0x7F;
 			uint16_t leftover = 0;

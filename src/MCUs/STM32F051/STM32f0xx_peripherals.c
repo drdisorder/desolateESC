@@ -96,6 +96,8 @@ void INPUT_DMA_IRQHandler(void){
 		DMA1->IFCR = INPUT_DMA_TC_ChannelFlag;
 		if(((inputDMAbuffer[2]-inputDMAbuffer[0])*17) > inputDMAbuffer[31]-inputDMAbuffer[0]){
 			memcpy(InputBuf, (uint32_t *)inputDMAbuffer, 128);
+			//telemetry request should not get missed by the loop
+			if(inputDMAbuffer[23]-inputDMAbuffer[22] > ((inputDMAbuffer[2]-inputDMAbuffer[0])>>1)) telemetryRequest = 1;
 			newInput = 1;
 		}else{
 			LL_DMA_DisableChannel(DMA1, INPUT_DMA_Channel);
@@ -279,7 +281,11 @@ void TLMUARTsend(uint8_t *buf, uint8_t length){
 /* ADCs */
 /*_______________________________________________________________________________________________*/
 
-__IO uint16_t ADC_DMAbuffer[ADC_CHANNEL_COUNT*10];
+__IO uint16_t ADC_DMAbuffer[ADC_CHANNEL_COUNT*20];
+
+#ifndef MCU_VOLTAGE
+#define MCU_VOLTAGE 3300
+#endif
 
 void ADCInit(){
 	
@@ -294,7 +300,7 @@ void ADCInit(){
 	DMA_InitStructure.MemoryOrM2MDstIncMode  = LL_DMA_MEMORY_INCREMENT;
 	DMA_InitStructure.PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_HALFWORD;
 	DMA_InitStructure.MemoryOrM2MDstDataSize = LL_DMA_MDATAALIGN_HALFWORD;
-	DMA_InitStructure.NbData                 = ADC_CHANNEL_COUNT*10;
+	DMA_InitStructure.NbData                 = ADC_CHANNEL_COUNT*20;
 	DMA_InitStructure.Priority               = LL_DMA_PRIORITY_HIGH;
 	LL_DMA_Init(DMA1, LL_DMA_CHANNEL_2, &DMA_InitStructure);
 	
@@ -327,13 +333,14 @@ void ADCInit(){
 	
 	LL_ADC_REG_SetSequencerChAdd(ADC1, LL_ADC_CHANNEL_TEMPSENSOR);
 	#ifdef VOLTAGE_CHANNEL
-		LL_ADC_REG_SetSequencerChAdd(ADC1, VOLTAGE_CHANNEL);
+	LL_ADC_REG_SetSequencerChAdd(ADC1, VOLTAGE_CHANNEL);
 	#endif
 	#ifdef CURRENT_CHANNEL
-		LL_ADC_REG_SetSequencerChAdd(ADC1, CURRENT_CHANNEL);
+	LL_ADC_REG_SetSequencerChAdd(ADC1, CURRENT_CHANNEL);
 	#endif
 	
 	LL_ADC_StartCalibration(ADC1);
+	delay16(5000);
 	while(LL_ADC_IsCalibrationOnGoing(ADC1));
 	delay16(5000);
 	LL_ADC_ClearFlag_ADRDY(ADC1);
@@ -347,30 +354,47 @@ void ADCInit(){
 
 void getADCvalues(int16_t *ADCdatas){
 	static int16_t calibCurrent = 0;
-	uint8_t ArrMax = ADC_CHANNEL_COUNT*10;
+	uint8_t ArrMax = ADC_CHANNEL_COUNT*20;
 	uint8_t ChannelOrder[ADC_CHANNEL_COUNT] = ADC_CHANNEL_ORDER;
-	ADCdatas[0] = __LL_ADC_CALC_TEMPERATURE(3300,ADC_DMAbuffer[ChannelOrder[0]],LL_ADC_RESOLUTION_12B); 
+	ADCdatas[0] = __LL_ADC_CALC_TEMPERATURE(MCU_VOLTAGE,ADC_DMAbuffer[ChannelOrder[0]],LL_ADC_RESOLUTION_12B); 
 	#ifdef VOLTAGE_CHANNEL
-		ADCdatas[1] = ADC_DMAbuffer[ChannelOrder[1]];
+	ADCdatas[1] = ADC_DMAbuffer[ChannelOrder[1]];
 	#else
-		ADCdatas[1] = 0;
+	ADCdatas[1] = 0;
 	#endif
 	#ifdef CURRENT_CHANNEL
-		//get Current avg
-		uint32_t CurrentAVG = 0;
-		for(uint8_t i=ChannelOrder[2];i<ArrMax; i+=ADC_CHANNEL_COUNT){
-			CurrentAVG += ADC_DMAbuffer[i];
-		}
-		ADCdatas[2] = (CurrentAVG/ArrMax);
+	//get Current avg
+	uint32_t CurrentAVG = 0;
+	for(uint8_t i=ChannelOrder[2];i<ArrMax; i+=ADC_CHANNEL_COUNT){
+		CurrentAVG += ADC_DMAbuffer[i];
+	}
+	ADCdatas[2] = (CurrentAVG/ArrMax);
 	#else
-		ADCdatas[2] = 0;
+	ADCdatas[2] = 0;
 	#endif
 }	
 
 
+/* watchdog */
+/*_______________________________________________________________________________________________*/
 
 
+void WDTinit(){
+	LL_IWDG_Enable(IWDG);
+	
+	LL_IWDG_EnableWriteAccess(IWDG);
+	
+	LL_IWDG_SetPrescaler(IWDG, LL_IWDG_PRESCALER_4);
+	while(LL_IWDG_IsActiveFlag_PVU(IWDG));
+	LL_IWDG_SetReloadCounter(IWDG, 1500);
+	while(LL_IWDG_IsActiveFlag_RVU(IWDG));
+	LL_IWDG_Enable(IWDG);
+	LL_IWDG_ReloadCounter(IWDG);	
+}
 
+void resetWDT(){
+	LL_IWDG_ReloadCounter(IWDG);
+}
 
 
 

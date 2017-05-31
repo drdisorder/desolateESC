@@ -1,3 +1,14 @@
+/* TARGET CONFIGURATION */
+/*_______________________________________________________________________________________________*/
+
+// temperature in C where it reduces the max throttle
+#define OVERTEMP_PROTECTION 100
+// factor how strong the max throttle is reduced
+#define OVERTEMP_FACTOR 5
+// max reduction
+#define OVERTEMP_MIN 512
+
+
 
 /* SIGNAL INPUT */
 /*_______________________________________________________________________________________________*/
@@ -171,10 +182,10 @@ current on: A6
 	
 	
 #define VOLTAGE_CHANNEL LL_ADC_CHANNEL_3
-#define VOLTAGE_SCALE_DEVIDER 17
+#define VOLTAGE_SCALE_DEVIDER 170
 
 #define CURRENT_CHANNEL LL_ADC_CHANNEL_6
-#define CURRENT_SCALE_DEVIDER 26
+#define CURRENT_SCALE_DEVIDER 260
 
 #define ADC_CHANNEL_COUNT 3
 
